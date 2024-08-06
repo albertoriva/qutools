@@ -1,0 +1,60 @@
+#!/bin/bash
+
+mode=""
+who="$USER"
+
+for arg in $*; do
+  if [[ "$arg" == "h" ]];
+  then
+    mode="h"
+  else
+    who=$arg
+  fi
+done
+
+function qmine_text () {
+  col=$(command -v colorize.py)
+  if [ "$col" == "" ];
+  then
+    squeue -S i -u $who -o "%i	%j	%a	%g	%q	%M	%C	%m	%T	%k" $* \
+    | column -t
+  else
+    squeue -S i -u $who -o "%i	%j	%a	%g	%q	%M	%C	%m	%T	%k" $* \
+    | column -t \
+    | colorize.py RUNNING +green PENDING +yellow COMPLETING cyan
+  fi
+#  sleep 10
+}
+
+function qmine_html() {
+  cat <<EOF
+<!DOCTYPE html>
+<HTML>
+<HEAD>
+<STYLE>
+BODY { font-family: courier; font-size: 20pt; }
+TABLE { width: 100%; background: lightgrey;}
+TH { text-align: left; }
+.RUNNING { color: green; }
+.PENDING { color: yellow; }
+.COMPLETING {color: cyan; }
+</STYLE>
+</HEAD>
+<BODY>
+$(date)
+<TABLE><TR><TH>JobId</TH><TH>Name</TH><TH>Time</TH><TH>Status</TH><TH>Label</TH></TR>
+EOF
+
+  /opt/slurm/bin/squeue -u $who -o "%i %j %M %T %k" | tail -n +2 | while read jobid jobname jobtime jobstatus joblabel;
+  do
+    echo "<TR><TD>$jobid</TD><TD>$jobname</TD><TD>$jobtime</TD><TD class='$jobstatus'>$jobstatus</TD><TD>$joblabel</TD><TR>"
+  done
+  echo "</TABLE></BODY></HTML>"
+}
+
+if [[ "$mode" == "h" ]];
+then
+  qmine_html
+else
+  qmine_text
+fi

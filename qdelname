@@ -1,0 +1,11 @@
+#!/bin/bash
+
+qmine | tail -n +2 | grep $1
+echo Proceed?
+read ans
+if [ "$ans" == "y" ];
+then
+  qmine|grep -i $1|cut -f 1 -d " "|xargs scancel
+fi
+
+
